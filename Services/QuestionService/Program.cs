@@ -1,9 +1,7 @@
+using Common;
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using QuestionService.Data;
 using QuestionService.services;
-using Wolverine;
 using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,27 +14,14 @@ builder.AddServiceDefaults();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TagService>();
 
-builder.Services.AddAuthentication()
-    .AddKeycloakJwtBearer(serviceName: "keycloack", realm: "overflow", option =>
-    {
-        option.RequireHttpsMetadata = false;
-        option.Audience = "overflow";
-        option.Authority = "http://keycloak:6001/realms/overflow"; //for aspire 13 
-    });
-    
+builder.Services.AddKeyCloakAuthentication();
+
 builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
 
-builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-        .AddService(builder.Environment.ApplicationName))
-        .AddSource("Wolverine");
-});
-
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
     opts.PublishAllMessages().ToRabbitExchange("questions");
+    opts.ApplicationAssembly = typeof(Program).Assembly;
 });
 
 var app = builder.Build();

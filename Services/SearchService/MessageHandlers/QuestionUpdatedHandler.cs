@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Contracts;
 using Typesense;
 
-namespace SearchService.MessageHnadlers;
+namespace SearchService.MessageHandlers;
 
 public class QuestionUpdatedHandler(ITypesenseClient client)
 {

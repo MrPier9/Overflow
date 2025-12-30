@@ -2,7 +2,7 @@ using Contracts;
 using SearchService.Models;
 using Typesense;
 
-namespace SearchService.MessageHnadlers;
+namespace SearchService.MessageHandlers;
 
 public class QuestionDeletedHandler(ITypesenseClient client)
 {

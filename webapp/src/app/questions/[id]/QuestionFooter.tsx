@@ -1,6 +1,7 @@
 'use client';
 
 import { Question } from "@/lib/types";
+import { timeAgo } from "@/lib/util";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
 import Link from "next/link";
@@ -20,7 +21,7 @@ export default function QuestionFooter({ question }: Props) {
                 </div>
             </div>
             <div className="flex flex-col basis-2/5 bg-primary/10 px-3 py-2 gap-2 rounded-lg">
-                <span className="text-sm font-extralight">asked {question.createdAt}</span>
+                <span className="text-sm font-extralight">asked {timeAgo(question.createdAt)}</span>
                 <div className="flex items-center gap-3">
                     <Avatar className="h-6 w-6" color="secondary" name={question.askerDisplayName.charAt(0)} />
                     <div className="flex flex-col items-center">

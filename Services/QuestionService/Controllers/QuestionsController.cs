@@ -51,7 +51,7 @@ public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagServi
 
         if (!string.IsNullOrEmpty(tag))
         {
-            query.Where(x => x.TagSlugs.Contains(tag));
+            query = query.Where(x => x.TagSlugs.Contains(tag));
         }
 
         return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();

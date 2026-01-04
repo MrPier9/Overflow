@@ -11,6 +11,7 @@ var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
     .WithEnvironment("VIRTUAL_HOST", "id.overflow.local")
+    // .WithEndpoint(6001, 8080, "keycloak", isExternal: true) // when aspire publish -o infra and aspire do build
     .WithEnvironment("VIRTUAL_PORT", "8080");
 
 var postgres = builder.AddPostgres("postgres", port: 5432)

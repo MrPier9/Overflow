@@ -1,65 +1,87 @@
+import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 
 export async function fetchClient<T>(
-    url: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    options: Omit<RequestInit, 'body'> & { body?: unknown } = {}
+  url: string,
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  options: Omit<RequestInit, "body"> & { body?: unknown } = {}
 ): Promise<{
-    data: T | null,
-    error?: {
-        message: string,
-        status: number
-    }
+  data: T | null;
+  error?: {
+    message: string;
+    status: number;
+  };
 }> {
-    const { body, ...rest } = options;
-    const apiUrl = process.env.API_URL;
+  const { body, ...rest } = options;
+  const apiUrl = process.env.API_URL;
 
-    if (!apiUrl) throw new Error("Missing API URL");
+  if (!apiUrl) throw new Error("Missing API URL");
 
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        ...(rest.headers || {})
-    };
+  const session = await auth();
 
-    const response = await fetch(apiUrl + url, {
-        method,
-        headers,
-        ...(body ? { body: JSON.stringify(body) } : {}),
-        ...rest
-    });
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(session?.accessToken
+      ? { Authorization: `Bearer ${session.accessToken}` }
+      : {}),
+    ...(rest.headers || {}),
+  };
 
-    const contentType = response.headers.get('Content-Type');
-    const isJson = contentType?.includes('application/json') || contentType?.includes('application/problem+json');
-    const parsed = isJson ? await response.json() : await response.text();
+  const response = await fetch(apiUrl + url, {
+    method,
+    headers,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...rest,
+  });
 
-    if (!response.ok) {
-        if (response.status === 404) return notFound();
-        if (response.status === 500) throw new Error(`Server Error. Please try again later...`);
+  const contentType = response.headers.get("Content-Type");
+  const isJson =
+    contentType?.includes("application/json") ||
+    contentType?.includes("application/problem+json");
+  const parsed = isJson ? await response.json() : await response.text();
 
-        let message = '';
+  if (!response.ok) {
+    if (response.status === 404) return notFound();
+    if (response.status === 500)
+      throw new Error(`Server Error. Please try again later...`);
 
-        if (typeof parsed === 'string') {
-            message = parsed
-        } else if (parsed?.message) {
-            message = parsed?.message
-        }
+    let message = "";
 
-        if (!message) {
-            message = getFallbackMessage(response.status)
-        }
-
-        return { data: null, error: { message, status: response.status } }
+    if (response.status === 401) {
+      const authHeader = response.headers.get("WWW-Authenticate");
+      if (authHeader?.includes("error_description")) {
+        const match = authHeader?.match(/error_description="(.+?)"/);
+        if (match) message = match[1];
+      } else {
+        message = "You must be logged in to do that!";
+      }
     }
 
-    return { data: parsed as T}
+    if (!message) {
+      if (typeof parsed === "string") {
+        message = parsed;
+      } else if (parsed?.message) {
+        message = parsed?.message;
+      } else {
+        message = getFallbackMessage(response.status);
+      }
+    }
+
+    return { data: null, error: { message, status: response.status } };
+  }
+
+  return { data: parsed as T };
 }
 
 function getFallbackMessage(status: number) {
-    switch (status) {
-        case 400: return 'Bad Reqeust, please check your input';
-        case 401: return 'You must be logged in';
-        case 403: return 'You do not have permission to access this resource';
-        case 500: return 'Server Error. Please try again later...';
-        default: return 'An unexpected error occurred. Please try again later';
-    }
+  switch (status) {
+    case 400:
+      return "Bad Reqeust, please check your input";
+    case 403:
+      return "You do not have permission to access this resource";
+    case 500:
+      return "Server Error. Please try again later...";
+    default:
+      return "An unexpected error occurred. Please try again later";
+  }
 }

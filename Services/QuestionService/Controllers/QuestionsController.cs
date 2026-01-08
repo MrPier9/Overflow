@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Contracts;
 using FastExpressionCompiler;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,10 +28,12 @@ public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagServi
 
         if (userId is null || name is null) return BadRequest("Cannot get user details");
 
+        var sanitazier = new HtmlSanitizer();
+
         var question = new Question
         {
             Title = dto.Title,
-            Content = dto.Content,
+            Content = sanitazier.Sanitize(dto.Content),
             TagSlugs = dto.Tags,
             AskerId = userId,
             AskerDisplayName = name
@@ -84,8 +87,10 @@ public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagServi
 
         if (!await tagService.AreTagsValidAsync(dto.Tags)) return BadRequest("Invalid tags");
 
+        var sanitazier = new HtmlSanitizer();
+
         question.Title = dto.Title;
-        question.Content = dto.Content;
+        question.Content = sanitazier.Sanitize(dto.Content);
         question.TagSlugs = dto.Tags;
         question.UpdatedAt = DateTime.UtcNow;
 
@@ -127,9 +132,11 @@ public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagServi
 
         if (question is null) return BadRequest("Cannot get Question");
 
+        var sanitazier = new HtmlSanitizer();
+
         var answer = new Answer
         {
-            Content = dto.Content,
+            Content = sanitazier.Sanitize(dto.Content),
             UserId = userId,
             UserDisplayName = name,
             QuestionId = questionId
@@ -159,7 +166,9 @@ public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagServi
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId != answer.UserId) return Forbid();
 
-        answer.Content = dto.Content;
+        var sanitazier = new HtmlSanitizer();
+
+        answer.Content = sanitazier.Sanitize(dto.Content);
         answer.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();

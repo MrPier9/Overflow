@@ -11,6 +11,7 @@ public class QuestionUpdatedHandler(ITypesenseClient client)
         await client.UpdateDocument("questions", message.QuestionId, new
         {
             Id = message.QuestionId,
+            Title = message.Title,
             Content = StripHtml(message.Content),
             Tags = message.Tags.ToArray()
         });

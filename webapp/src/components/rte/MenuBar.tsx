@@ -2,10 +2,16 @@ import {
   BoldIcon,
   CodeBracketIcon,
   ItalicIcon,
+  LinkIcon,
+  PhotoIcon,
   StrikethroughIcon,
 } from "@heroicons/react/20/solid";
 import { Button } from "@heroui/button";
 import { Editor, useEditorState } from "@tiptap/react";
+import { CloudinaryUploadWidgetResults } from "@cloudinary-util/types";
+import { errorToast } from "@/lib/util";
+import { CldUploadButton } from 'next-cloudinary';
+
 
 type Props = {
   editor: Editor | null;
@@ -22,11 +28,20 @@ export default function MenuBar({ editor }: Props) {
         isItalic: editor.isActive("italic"),
         isStrike: editor.isActive("strike"),
         isCodeBlock: editor.isActive("codeBlock"),
+        isLink: editor.isActive("link")
       };
     },
   });
 
   if (!editor) return null;
+
+  const onUploadImage = (result: CloudinaryUploadWidgetResults) => {
+    if (result.info && typeof result.info === "object") {
+      editor.chain().focus().setImage({ src: result.info.secure_url }).run();
+    } else {
+      errorToast({ message: "Problem adding image" });
+    }
+  }
 
   const options = [
     {
@@ -49,6 +64,11 @@ export default function MenuBar({ editor }: Props) {
       onClick: () => editor.chain().focus().toggleCodeBlock().run(),
       pressed: editorState?.isCodeBlock,
     },
+    {
+      icon: <LinkIcon className="w-5 h-5" />,
+      onClick: () => editor.chain().focus().toggleLink().run(),
+      pressed: editorState?.isLink,
+    },
   ];
 
   return (
@@ -66,6 +86,7 @@ export default function MenuBar({ editor }: Props) {
           {option.icon}
         </Button>
       ))}
+      <Button isIconOnly size="sm" as={CldUploadButton} options={{ maxFiles: 1 }} onSuccess={onUploadImage} signatureEndpoint='/api/sign-image' uploadPreset="overflow"><PhotoIcon className="w-5 h-5" /></Button>
     </div>
   );
 }

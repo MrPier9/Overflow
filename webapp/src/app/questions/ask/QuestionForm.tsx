@@ -1,36 +1,64 @@
 "use client";
 
 import ReachTextEditor from "@/components/rte/ReachTextEditor";
+import { postQuestion, updateQuestion } from "@/lib/actions/question-actions";
 import { useTagStore } from "@/lib/hooks/useTagStore";
 import { questionSchema, QuestionSchema } from "@/lib/schemas/questionSchema";
+import { Question } from "@/lib/types";
+import { handleError } from "@/lib/util";
 import { Button } from "@heroui/button";
 import { Form } from "@heroui/form";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
+import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 
-export default function QuestionForm() {
+type Props = {
+  questionToUpdate?: Question
+}
+
+export default function QuestionForm({ questionToUpdate }: Props) {
+  const [pending, startTransition] = useTransition();
   const tags = useTagStore((state) => state.tags);
   const {
     register,
     control,
+    reset,
     handleSubmit,
     formState: { isSubmitting, isValid, errors },
   } = useForm<QuestionSchema>({
-    // @ts-expect-error: Suppressing input/output type mismatch from Zod transform
     resolver: zodResolver(questionSchema),
     mode: "onTouched",
   });
 
+  const router = useRouter();
+
+  useEffect(() => {
+    if (questionToUpdate) reset({
+      ...questionToUpdate,
+      tags: questionToUpdate.tagSlugs
+    })
+  }, [questionToUpdate, reset])
+
   const onSubmit = (data: QuestionSchema) => {
-    console.log(data);
+    startTransition(async () => {
+      if (questionToUpdate) {
+        const { error } = await updateQuestion(data, questionToUpdate.id);
+        if (error) handleError(error);
+        router.push(`/questions/${questionToUpdate.id}`);
+      } else {
+        const { data: question, error } = await postQuestion(data);
+        if (error) handleError(error);
+        if (question) router.push(`/questions/${question.id}`)
+      }
+    })
   };
 
   return (
     <Form
-      // @ts-expect-error: Suppressing input/output type mismatch from Zod transform
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-3 p-6 shadow-xl bg-white dark:bg-black"
     >
@@ -65,7 +93,7 @@ export default function QuestionForm() {
               <ReachTextEditor
                 onChange={onChange}
                 onBlur={onBlur}
-                value={value}
+                value={value || ''}
                 errorMessage={fieldState.error?.message}
               />
               {fieldState.error?.message && (
@@ -82,36 +110,38 @@ export default function QuestionForm() {
         <p className="text-sm">
           Add up to 5 tags to describe what your question is about
         </p>
-        <Controller
-          name="tags"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Select
-              className="w-full"
-              label="Select 1-5 tags"
-              selectionMode="multiple"
-              isClearable
-              disallowEmptySelection
-              items={tags}
-              onBlur={field.onBlur}
-              selectedKeys={field.value ?? []}
-              onSelectionChange={(keys) => field.onChange(Array.from(keys))}
-              isInvalid={fieldState.invalid}
-              errorMessage={fieldState.error?.message}
-            >
-              {(tag) => <SelectItem key={tag.id}>{tag.name}</SelectItem>}
-            </Select>
-          )}
-        />
+        {tags.length > 0 && (
+          <Controller
+            name="tags"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Select
+                className="w-full"
+                label="Select 1-5 tags"
+                selectionMode="multiple"
+                isClearable
+                disallowEmptySelection
+                items={tags}
+                onBlur={field.onBlur}
+                selectedKeys={field.value ?? []}
+                onSelectionChange={(keys) => field.onChange(Array.from(keys))}
+                isInvalid={fieldState.invalid}
+                errorMessage={fieldState.error?.message}
+              >
+                {(tag) => <SelectItem key={tag.id}>{tag.name}</SelectItem>}
+              </Select>
+            )}
+          />
+        )}
       </div>
       <Button
         type="submit"
         color="primary"
         className="w-fit"
-        isLoading={isSubmitting}
-        isDisabled={!isValid}
+        isLoading={isSubmitting || pending}
+        isDisabled={!isValid || pending}
       >
-        Post your question
+        {questionToUpdate ? 'Update' : 'Post'} your question
       </Button>
     </Form>
   );

@@ -4,7 +4,7 @@ import { Tag } from "../types"
 type TagStore = {
     tags: Tag[];
     setTags: (tags: Tag[]) => void;
-    getTagBySlug: (slug?: string) => Tag | undefined;
+    getTagBySlug: (slug: string) => Tag | undefined;
 }
 
 export const useTagStore = create<TagStore>((set, get) => ({

@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 *.swp
 
 overflow-realm.json
+overflow.local.key
+overflow.local.crt
+.env.production

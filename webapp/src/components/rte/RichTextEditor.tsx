@@ -13,7 +13,7 @@ type Props = {
   errorMessage?: string;
 };
 
-export default function ReachTextEditor({
+export default function RichTextEditor({
   onChange,
   onBlur,
   value,

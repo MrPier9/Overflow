@@ -1,6 +1,5 @@
 "use client";
 
-import ReachTextEditor from "@/components/rte/ReachTextEditor";
 import { postQuestion, updateQuestion } from "@/lib/actions/question-actions";
 import { useTagStore } from "@/lib/hooks/useTagStore";
 import { questionSchema, QuestionSchema } from "@/lib/schemas/questionSchema";
@@ -12,9 +11,12 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
+
+const RichTextEditor = dynamic(() => import("@/components/rte/RichTextEditor"), { ssr: false });
 
 type Props = {
   questionToUpdate?: Question
@@ -90,7 +92,7 @@ export default function QuestionForm({ questionToUpdate }: Props) {
                 Include all the information someone would need to answer this
                 question
               </p>
-              <ReachTextEditor
+              <RichTextEditor
                 onChange={onChange}
                 onBlur={onBlur}
                 value={value || ''}

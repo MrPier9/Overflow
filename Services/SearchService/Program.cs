@@ -30,10 +30,6 @@ builder.Services.AddTypesenseClient(config =>
 
 await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    opts.ListenToRabbitQueue("questions.search", config =>
-    {
-        config.BindExchange("questions");
-    });
     opts.ApplicationAssembly = typeof(Program).Assembly;
 });
 
@@ -76,7 +72,7 @@ app.MapGet("/search", async (string query, ITypesenseClient client) =>
     }
 });
 
-app.MapGet("/search/similat-titles", async (string query, ITypesenseClient client) =>
+app.MapGet("/search/similar-titles", async (string query, ITypesenseClient client) =>
 {
     var searchParams = new SearchParameters(query, "title");
     try

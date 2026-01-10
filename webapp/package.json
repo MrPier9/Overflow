@@ -13,6 +13,7 @@
     "@heroui/react": "^2.8.7",
     "@hookform/resolvers": "^5.2.2",
     "@next/env": "^16.1.1",
+    "@react-stately/data": "^3.15.0",
     "@tiptap/extension-image": "^3.15.3",
     "@tiptap/pm": "^3.15.0",
     "@tiptap/react": "^3.15.0",

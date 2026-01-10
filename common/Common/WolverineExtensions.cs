@@ -16,7 +16,11 @@ public static class WolverineExtensions
 {
     public static async Task UseWolverineWithRabbitMqAsync(this IHostApplicationBuilder builder, Action<WolverineOptions> configureMessaging)
     {
-        var retryPolicy = Policy
+        var isEfDesignTime = AppDomain.CurrentDomain.FriendlyName.StartsWith("ef", StringComparison.OrdinalIgnoreCase);
+
+        if (!isEfDesignTime)
+        {
+            var retryPolicy = Policy
             .Handle<BrokerUnreachableException>()
             .Or<SocketException>()
             .WaitAndRetryAsync(
@@ -28,18 +32,19 @@ public static class WolverineExtensions
                 }
             );
 
-        await retryPolicy.ExecuteAsync(async () =>
-        {
-            var endpoint = builder.Configuration.GetConnectionString("messaging")
-                ?? throw new InvalidOperationException("messaging connection string not found");
-
-            var factory = new ConnectionFactory
+            await retryPolicy.ExecuteAsync(async () =>
             {
-                Uri = new Uri(endpoint)
-            };
+                var endpoint = builder.Configuration.GetConnectionString("messaging")
+                    ?? throw new InvalidOperationException("messaging connection string not found");
 
-            await using var connection = await factory.CreateConnectionAsync();
-        });
+                var factory = new ConnectionFactory
+                {
+                    Uri = new Uri(endpoint)
+                };
+
+                await using var connection = await factory.CreateConnectionAsync();
+            });
+        }
 
         builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
         {
@@ -52,7 +57,7 @@ public static class WolverineExtensions
         {
             opts.UseRabbitMqUsingNamedConnection("messaging")
                 .AutoProvision()
-                .DeclareExchange("questions");
+                .UseConventionalRouting();
 
             configureMessaging(opts);
         });
